@@ -1,11 +1,12 @@
 import 'dart:ui';
-
 import 'package:firebase_auth/firebase_auth.dart';
+import 'package:firebase_core/firebase_core.dart';
+import 'package:firebase_database/firebase_database.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_svg/flutter_svg.dart';
-import 'package:taskly/components/todo_card.dart';
 import 'package:taskly/pages/addtask_page.dart';
 import 'package:taskly/pages/login_page.dart';
+import 'package:taskly/components/todo_card.dart';
 
 class HomePage extends StatefulWidget {
   const HomePage({super.key});
@@ -15,26 +16,106 @@ class HomePage extends StatefulWidget {
 }
 
 class _HomePageState extends State<HomePage> {
-  List toDoList = [];
-
+  List<Map<String, dynamic>> toDoList = [];
   bool _isLogoutVisible = false;
 
-  void checkBoxChanged(int index) {
-    setState(() {
-      toDoList[index][1] = !toDoList[index][1];
-    });
+  @override
+  void initState() {
+    super.initState();
+    _fetchTasksFromDatabase();
   }
 
-  // Function to handle logout
+  Future<void> _fetchTasksFromDatabase() async {
+    try {
+      final user = FirebaseAuth.instance.currentUser;
+      if (user == null) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('User is not logged in!'),
+          ),
+        );
+        return;
+      }
+
+      final uid = user.uid;
+      final taskRef = FirebaseDatabase.instanceFor(
+        app: Firebase.app(),
+        databaseURL: "https://project-akhir-pam-4f1a1-default-rtdb.asia-southeast1.firebasedatabase.app",
+      ).ref().child('tasks').child(uid);
+
+      // Listen to changes in the database
+      taskRef.onValue.listen((event) {
+        final data = event.snapshot.value as Map?;
+        final List<Map<String, dynamic>> fetchedTasks = [];
+
+        if (data != null) {
+          data.forEach((taskId, value) {
+            fetchedTasks.add({
+              'id': taskId,
+              'title': value['title'],
+              'notes': value['notes'],
+              'timestamp': value['timestamp'],
+              'completed': value['completed'] ?? false,
+            });
+          });
+        }
+
+        setState(() {
+          toDoList = fetchedTasks;
+        });
+      });
+    } catch (e) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Failed to fetch tasks: $e')),
+      );
+    }
+  }
+
+  Future<void> checkBoxChanged(int index, bool? value) async {
+    if (value == null) return;
+
+    try {
+      final user = FirebaseAuth.instance.currentUser;
+      if (user == null) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('User is not logged in!')),
+        );
+        return;
+      }
+
+      final uid = user.uid;
+      final taskId = toDoList[index]['id'];
+      final taskRef = FirebaseDatabase.instanceFor(
+        app: Firebase.app(),
+        databaseURL: "https://project-akhir-pam-4f1a1-default-rtdb.asia-southeast1.firebasedatabase.app",
+      ).ref().child('tasks').child(uid).child(taskId);
+
+      // Update the "completed" status in the database
+      await taskRef.update({'completed': value});
+
+      setState(() {
+      toDoList[index]['completed'] = value;
+
+      toDoList.sort((a, b) {
+        if (a['completed'] == b['completed']) return 0;
+        return a['completed'] ? 1 : -1; 
+      });
+    });
+    } catch (e) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Failed to update task: $e')),
+      );
+    }
+  }
+
   Future<void> _handleLogout(BuildContext context) async {
     try {
-      await FirebaseAuth.instance.signOut(); // Sign out from Firebase
+      await FirebaseAuth.instance.signOut();
       Navigator.pushReplacement(
         context,
         MaterialPageRoute(builder: (context) => LoginPage()),
       );
     } catch (e) {
-      // Handle errors (optional)
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(content: Text('Failed to log out: $e')),
       );
@@ -60,99 +141,84 @@ class _HomePageState extends State<HomePage> {
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
               SvgPicture.asset('images/taskly-home.svg'),
-              Image.asset(
-                'images/profile.png',
-                height: 50,
-                width: 50,
-                fit: BoxFit.contain,
+              GestureDetector(
+                onTap: _toggleLogoutButton,
+                child: Image.asset(
+                  'images/profile.png',
+                  height: 50,
+                  width: 50,
+                  fit: BoxFit.contain,
+                ),
               ),
             ],
           ),
         ),
       ),
-      body: ListView(
+      body: Stack(
         children: [
-          Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 25, vertical: 20),
-            child: Card(
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(15),
-              ),
-              color: Colors.white,
-              elevation: 0,
-              child: Padding(
-                padding: const EdgeInsets.symmetric(vertical: 25, horizontal: 30),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    const Text(
-                      'Your Completion',
-                      style: TextStyle(
-                        fontSize: 14,
-                        color: Color(0xFF656565),
-                      ),
+          ListView(
+            children: [
+              Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 25, vertical: 20),
+                child: Card(
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(15),
+                  ),
+                  color: Colors.white,
+                  elevation: 0,
+                  child: Padding(
+                    padding: const EdgeInsets.symmetric(vertical: 25, horizontal: 30),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        const Text(
+                          'Your Completion',
+                          style: TextStyle(fontSize: 14, color: Color(0xFF656565)),
+                        ),
+                        const Text(
+                          '25% Task Completed',
+                          style: TextStyle(
+                              fontSize: 18, fontWeight: FontWeight.bold, color: Color(0xFF474747)),
+                        ),
+                        const SizedBox(height: 15),
+                        Container(
+                        height: 45,
+                        child: LinearProgressIndicator(
+                          value: 0.25,
+                          backgroundColor: Colors.grey[200],
+                          valueColor: const AlwaysStoppedAnimation<Color>(Color(0xFF4169E1)),
+                        ),
+                        ),
+                      ],
                     ),
-                    const Text(
-                      '25% Task Completed',
-                      style: TextStyle(
-                        fontSize: 18,
-                        fontWeight: FontWeight.bold,
-                        color: Color(0xFF474747),
-                      ),
-                    ),
-                    const SizedBox(height: 15),
-                    Container(
-                      height: 45,
-                      child: LinearProgressIndicator(
-                        value: 0.5,
-                        backgroundColor: Colors.grey[200],
-                        valueColor:
-                            AlwaysStoppedAnimation<Color>(const Color(0xFF4169E1)),
-                      ),
-                    ),
-                  ],
+                  ),
                 ),
               ),
-            ),
-          ),
-          const Padding(
-            padding: EdgeInsets.symmetric(horizontal: 25),
-            child: Text(
-              'All Task',
-              style: TextStyle(
-                fontSize: 21,
-                fontWeight: FontWeight.bold,
-                color: Color(0xFF202020),
+              const Padding(
+                padding: EdgeInsets.symmetric(horizontal: 25),
+                child: Text(
+                  'All Task',
+                  style: TextStyle(fontSize: 21, fontWeight: FontWeight.bold, color: Color(0xFF202020)),
+                ),
               ),
-            ),
+              Column(
+                children: toDoList.map((item) {
+                  int index = toDoList.indexOf(item);
+                  return TodoCard(
+                    taskName: item['title'],
+                    taskCompleted: item['completed'],
+                    onChanged: (value) => checkBoxChanged(index, value),
+                  );
+                }).toList(),
+              ),
+            ],
           ),
-          Container(
-            height: 350,
-            child: Column(
-              children: toDoList.map((item) {
-                int index = toDoList.indexOf(item);
-                return TodoCard(
-                  taskName: item[0],
-                  taskCompleted: item[1],
-                  onChanged: (value) => checkBoxChanged(index),
-                );
-              }).toList(),
-            ),
-          ),
-                    // If logout button is visible, blur the background
-          if (_isLogoutVisible)
+          if (_isLogoutVisible) ...[
             BackdropFilter(
               filter: ImageFilter.blur(sigmaX: 5.0, sigmaY: 5.0),
-              child: Container(
-                color: Colors.black.withOpacity(0.3),
-              ),
+              child: Container(color: Colors.black.withOpacity(0.3)),
             ),
-
-          // Logout button container
-          if (_isLogoutVisible)
-            Positioned(
-              bottom: 40,
-              left: MediaQuery.of(context).size.width * 0.4, // Center the logout button
+            Center(
               child: GestureDetector(
                 onTap: () => _handleLogout(context),
                 child: Container(
@@ -165,34 +231,32 @@ class _HomePageState extends State<HomePage> {
                         color: Colors.grey.withOpacity(0.3),
                         spreadRadius: 2,
                         blurRadius: 6,
-                        offset: const Offset(0, 3), // changes position of shadow
+                        offset: const Offset(0, 3),
                       ),
                     ],
                   ),
                   child: const Text(
                     'Logout',
-                    style: TextStyle(
-                      color: Colors.red,
-                      fontWeight: FontWeight.bold,
-                    ),
+                    style: TextStyle(color: Colors.red, fontWeight: FontWeight.bold),
                   ),
                 ),
               ),
             ),
+          ],
         ],
       ),
-      floatingActionButton: FloatingActionButton(
-        onPressed: () {
-          Navigator.push(
-            context,
-            MaterialPageRoute(builder: (context) => AddTaskPage()),
-          );
-        },
-        backgroundColor: const Color(0xFF4169E1),
-        child: SvgPicture.asset('images/plus.svg'),
-      ),
+      floatingActionButton: _isLogoutVisible
+          ? null
+          : FloatingActionButton(
+              onPressed: () {
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(builder: (context) => AddTaskPage()),
+                );
+              },
+              backgroundColor: const Color(0xFF4169E1),
+              child: SvgPicture.asset('images/plus.svg'),
+            ),
     );
   }
 }
-
-

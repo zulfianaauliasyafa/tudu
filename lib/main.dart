@@ -16,6 +16,8 @@ Future<void> main() async {
         appId: "1:391644262607:web:6b42f9f9e752c9d36e87ba",
         messagingSenderId: "391644262607",
         projectId: "project-akhir-pam-4f1a1",
+        databaseURL:
+            "https://project-akhir-pam-4f1a1-default-rtdb.asia-southeast1.firebasedatabase.app",
       ),
     );
   } else {
