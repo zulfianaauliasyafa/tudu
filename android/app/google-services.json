@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "391644262607",
+    "project_id": "project-akhir-pam-4f1a1",
+    "storage_bucket": "project-akhir-pam-4f1a1.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:391644262607:android:51102fec69779e326e87ba",
+        "android_client_info": {
+          "package_name": "com.example.taskly"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyCIaoEU8UAvw3svAuyP60Cq8eIR14nq70o"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
