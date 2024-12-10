@@ -2,10 +2,12 @@ import 'package:firebase_auth/firebase_auth.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
 import 'package:taskly/pages/addtask_page.dart';
 import 'package:taskly/pages/home_page.dart';
 import 'package:taskly/pages/regist_page.dart';
-import 'pages/login_page.dart';
+import 'package:taskly/pages/login_page.dart';
+import 'package:taskly/providers/task_provider.dart';
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -23,7 +25,17 @@ Future<void> main() async {
   } else {
     await Firebase.initializeApp();
   }
-  runApp(const MainApp());
+
+  // Wrap the application with MultiProvider
+  runApp(
+    MultiProvider(
+      providers: [
+        ChangeNotifierProvider(
+            create: (_) => TaskProvider()..fetchTasksFromDatabase()),
+      ],
+      child: const MainApp(),
+    ),
+  );
 }
 
 class MainApp extends StatelessWidget {
@@ -33,8 +45,7 @@ class MainApp extends StatelessWidget {
   Widget build(BuildContext context) {
     return MaterialApp(
       debugShowCheckedModeBanner: false,
-      // No need for `initialRoute`; determine route dynamically.
-      home: AuthCheck(),
+      home: const AuthCheck(),
       routes: {
         '/regist': (context) => RegistPage(),
         '/login': (context) => LoginPage(),
@@ -50,7 +61,6 @@ class AuthCheck extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    // Check the current user
     final User? user = FirebaseAuth.instance.currentUser;
 
     // Determine initial page based on authentication status

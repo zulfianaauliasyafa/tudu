@@ -4,9 +4,12 @@ import 'package:firebase_core/firebase_core.dart';
 import 'package:firebase_database/firebase_database.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_svg/flutter_svg.dart';
+import 'package:provider/provider.dart';
 import 'package:taskly/pages/addtask_page.dart';
+import 'package:taskly/pages/edittask_page.dart';
 import 'package:taskly/pages/login_page.dart';
 import 'package:taskly/components/todo_card.dart';
+import 'package:taskly/providers/task_provider.dart';
 
 class HomePage extends StatefulWidget {
   const HomePage({super.key});
@@ -130,6 +133,9 @@ class _HomePageState extends State<HomePage> {
 
   @override
   Widget build(BuildContext context) {
+
+    final taskProvider = Provider.of<TaskProvider>(context);
+
     return Scaffold(
       backgroundColor: const Color(0xFFF5F7FD),
       appBar: AppBar(
@@ -170,21 +176,24 @@ class _HomePageState extends State<HomePage> {
                     padding: const EdgeInsets.symmetric(vertical: 25, horizontal: 30),
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
+                          children: [
                         const Text(
                           'Your Completion',
                           style: TextStyle(fontSize: 14, color: Color(0xFF656565)),
                         ),
-                        const Text(
-                          '25% Task Completed',
-                          style: TextStyle(
-                              fontSize: 18, fontWeight: FontWeight.bold, color: Color(0xFF474747)),
+                        Text(
+                          '${(taskProvider.completionRate * 100).toStringAsFixed(0)}% Task Completed',
+                          style: const TextStyle(
+                            fontSize: 18,
+                            fontWeight: FontWeight.bold,
+                            color: Color(0xFF474747),
+                          ),
                         ),
                         const SizedBox(height: 15),
                         Container(
                         height: 45,
                         child: LinearProgressIndicator(
-                          value: 0.25,
+                          value: taskProvider.completionRate,
                           backgroundColor: Colors.grey[200],
                           valueColor: const AlwaysStoppedAnimation<Color>(Color(0xFF4169E1)),
                         ),
@@ -204,10 +213,24 @@ class _HomePageState extends State<HomePage> {
               Column(
                 children: toDoList.map((item) {
                   int index = toDoList.indexOf(item);
-                  return TodoCard(
-                    taskName: item['title'],
-                    taskCompleted: item['completed'],
-                    onChanged: (value) => checkBoxChanged(index, value),
+                  return GestureDetector(
+                    onTap: () {
+                      Navigator.push(
+                        context,
+                        MaterialPageRoute(
+                          builder: (context) => EditTaskPage(
+                            taskId: item['id'], // Pass the task ID
+                            title: item['title'], // Pass the title
+                            notes: item['notes'], // Pass the notes
+                          ),
+                        ),
+                      );
+                    },
+                    child: TodoCard(
+                      taskName: item['title'],
+                      taskCompleted: item['completed'],
+                      onChanged: (value) => checkBoxChanged(index, value),
+                    ),
                   );
                 }).toList(),
               ),
