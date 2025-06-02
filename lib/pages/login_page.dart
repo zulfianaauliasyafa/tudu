@@ -54,14 +54,12 @@ class LoginPage extends StatelessWidget {
       body: Column(
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
-          // Logo
           SvgPicture.asset(
             'images/logo.svg',
           ),
 
           const SizedBox(height: 70),
 
-          // Email TextField
           MyTextField(
             controller: emailController,
             hintText: "Email",
@@ -70,7 +68,6 @@ class LoginPage extends StatelessWidget {
 
           const SizedBox(height: 20),
 
-          // Password TextField
           MyTextField(
             controller: passwordController,
             hintText: "Password",
@@ -79,7 +76,6 @@ class LoginPage extends StatelessWidget {
 
           const SizedBox(height: 10),
 
-          // Forgot password?
           const Padding(
             padding: EdgeInsets.symmetric(horizontal: 25),
             child: Row(
@@ -95,7 +91,6 @@ class LoginPage extends StatelessWidget {
 
           const SizedBox(height: 30),
 
-          // Login button
           MyButton(
             text: "Login",
             onTap: () => loginUser(context),
@@ -103,7 +98,6 @@ class LoginPage extends StatelessWidget {
 
           const SizedBox(height: 15),
 
-          // Or
           const Padding(
             padding: EdgeInsets.symmetric(horizontal: 25),
             child: Row(
@@ -129,7 +123,6 @@ class LoginPage extends StatelessWidget {
 
           const SizedBox(height: 15),
 
-          // Log in with Google (future implementation)
           MyButton2(
             text: "Masuk dengan Google",
             onTap: () {
@@ -141,7 +134,6 @@ class LoginPage extends StatelessWidget {
 
           const SizedBox(height: 30),
 
-          // Don't have an account?
           Row(
             mainAxisAlignment: MainAxisAlignment.center,
             children: [

@@ -46,7 +46,6 @@ class _HomePageState extends State<HomePage> {
         databaseURL: "https://project-akhir-pam-4f1a1-default-rtdb.asia-southeast1.firebasedatabase.app",
       ).ref().child('tasks').child(uid);
 
-      // Listen to changes in the database
       taskRef.onValue.listen((event) {
         final data = event.snapshot.value as Map?;
         final List<Map<String, dynamic>> fetchedTasks = [];
@@ -93,7 +92,6 @@ class _HomePageState extends State<HomePage> {
         databaseURL: "https://project-akhir-pam-4f1a1-default-rtdb.asia-southeast1.firebasedatabase.app",
       ).ref().child('tasks').child(uid).child(taskId);
 
-      // Update the "completed" status in the database
       await taskRef.update({'completed': value});
 
       setState(() {
@@ -219,9 +217,9 @@ class _HomePageState extends State<HomePage> {
                         context,
                         MaterialPageRoute(
                           builder: (context) => EditTaskPage(
-                            taskId: item['id'], // Pass the task ID
-                            title: item['title'], // Pass the title
-                            notes: item['notes'], // Pass the notes
+                            taskId: item['id'],
+                            title: item['title'],
+                            notes: item['notes'], 
                           ),
                         ),
                       );

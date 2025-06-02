@@ -9,12 +9,10 @@ class AddTaskPage extends StatelessWidget {
   final TextEditingController titleController = TextEditingController();
   final TextEditingController notesController = TextEditingController();
 
-  // Save task to Firebase Realtime Database
   Future<void> _saveTaskToDatabase(BuildContext context) async {
     try {
       final user = FirebaseAuth.instance.currentUser;
       if (user == null) {
-        // If user is not logged in
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(
             content: Text('User is not logged in!'),
@@ -38,11 +36,10 @@ class AddTaskPage extends StatelessWidget {
         'timestamp': DateTime.now().toIso8601String(),
       };
 
-      await taskRef.push().set(task); // Save the task under a unique key
+      await taskRef.push().set(task);
 
-      Navigator.pop(context); // Return to the previous screen
+      Navigator.pop(context);
     } catch (e) {
-      // Handle errors gracefully
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
           content: Text('Failed to save task: $e'),
@@ -75,7 +72,6 @@ class AddTaskPage extends StatelessWidget {
               if (titleController.text.isNotEmpty) {
                 _saveTaskToDatabase(context);
               } else {
-                // Show a message if the task title is empty
                 ScaffoldMessenger.of(context).showSnackBar(
                   const SnackBar(
                     content: Text('Task title cannot be empty!'),
@@ -115,7 +111,7 @@ class AddTaskPage extends StatelessWidget {
                 ),
                 border: InputBorder.none,
               ),
-              maxLines: null, // Allows multiline input
+              maxLines: null, 
               keyboardType: TextInputType.multiline,
             ),
           ],
@@ -123,9 +119,9 @@ class AddTaskPage extends StatelessWidget {
       ),
       bottomNavigationBar: Container(
         height: 8,
-        color: Colors.blueGrey[50], // Matches light background tone
+        color: Colors.blueGrey[50], 
       ),
-      backgroundColor: const Color(0xFFF7F8FC), // Light grey background
+      backgroundColor: const Color(0xFFF7F8FC), 
     );
   }
 }

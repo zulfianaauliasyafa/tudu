@@ -26,7 +26,7 @@ Future<void> main() async {
     await Firebase.initializeApp();
   }
 
-  // Wrap the application with MultiProvider
+
   runApp(
     MultiProvider(
       providers: [
@@ -63,11 +63,10 @@ class AuthCheck extends StatelessWidget {
   Widget build(BuildContext context) {
     final User? user = FirebaseAuth.instance.currentUser;
 
-    // Determine initial page based on authentication status
     if (user != null) {
-      return const HomePage(); // User is logged in
+      return const HomePage();
     } else {
-      return LoginPage(); // User is not logged in
+      return LoginPage();
     }
   }
 }
