@@ -1,47 +1,77 @@
 import 'package:flutter/material.dart';
 
 class TodoCard extends StatelessWidget {
+  final String taskTitle;
+  final String taskNotes;
+  final bool taskCompleted;
+  final void Function(bool?)? onChanged;
+  final VoidCallback? onEditPressed;
+  final VoidCallback? onDeletePressed;
+
   const TodoCard({
     super.key,
-    required this.taskName, required this.taskCompleted, this.onChanged});
-
-  final String taskName;
-  final bool taskCompleted;
-  final Function(bool?)? onChanged;
+    required this.taskTitle,
+    required this.taskNotes,
+    required this.taskCompleted,
+    required this.onChanged,
+    this.onEditPressed,
+    this.onDeletePressed,
+  });
 
   @override
   Widget build(BuildContext context) {
-    return Padding(
-      padding: const EdgeInsets.only(
-        top: 15,
-        right: 25,
-        bottom: 0,
-        left: 25,
+    return Card(
+      margin: const EdgeInsets.only(bottom: 20),
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(15),
       ),
-      child: Container(
-        padding: const EdgeInsets.all(16),
-        decoration: BoxDecoration(
-          color: Colors.white,
-          borderRadius: BorderRadius.circular(15),
-        ),
+      child: Padding(
+        padding: const EdgeInsets.all(20),
         child: Row(
           children: [
             Checkbox(
               value: taskCompleted,
               onChanged: onChanged,
-              checkColor: Colors.white,
               activeColor: const Color(0xFF4169E1),
-              side: const BorderSide(color: Color(0xFFA8A8A8)),
             ),
-            Text(
-              taskName,
-              style: TextStyle(
-                color: const Color(0xFF3E3E3E),
-                fontSize: 16,
-                decoration: taskCompleted 
-                  ? TextDecoration.lineThrough 
-                  : TextDecoration.none,
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    taskTitle,
+                    style: TextStyle(
+                      fontSize: 16,
+                      fontWeight: FontWeight.w500,
+                      decoration: taskCompleted ? TextDecoration.lineThrough : null,
+                      color: taskCompleted ? Colors.grey : const Color(0xFF202020),
+                    ),
+                  ),
+                  if (taskNotes.isNotEmpty)
+                    Text(
+                      taskNotes,
+                      style: TextStyle(
+                        fontSize: 14,
+                        color: taskCompleted ? Colors.grey : const Color(0xFF656565),
+                        decoration: taskCompleted ? TextDecoration.lineThrough : null,
+                      ),
+                    ),
+                ],
               ),
+            ),
+            Row(
+              children: [
+                if (onEditPressed != null)
+                  IconButton(
+                    icon: const Icon(Icons.edit, color: Color(0xFF4169E1)),
+                    onPressed: onEditPressed,
+                  ),
+                if (onDeletePressed != null)
+                  IconButton(
+                    icon: const Icon(Icons.delete, color: Colors.red),
+                    onPressed: onDeletePressed,
+                  ),
+              ],
             ),
           ],
         ),
