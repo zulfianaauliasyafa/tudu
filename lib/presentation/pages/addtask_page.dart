@@ -1,51 +1,44 @@
-import 'package:firebase_core/firebase_core.dart';
 import 'package:flutter/material.dart';
-import 'package:firebase_auth/firebase_auth.dart';
-import 'package:firebase_database/firebase_database.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:taskly/data/models/task_model.dart';
+import 'package:taskly/presentation/bloc/task_bloc.dart';
 
-class AddTaskPage extends StatelessWidget {
-  AddTaskPage({super.key});
+class AddTaskPage extends StatefulWidget {
+  const AddTaskPage({super.key});
 
+  @override
+  State<AddTaskPage> createState() => _AddTaskPageState();
+}
+
+class _AddTaskPageState extends State<AddTaskPage> {
   final TextEditingController titleController = TextEditingController();
-  final TextEditingController notesController = TextEditingController();
+  final TextEditingController descriptionController = TextEditingController();
 
-  Future<void> _saveTaskToDatabase(BuildContext context) async {
-    try {
-      final user = FirebaseAuth.instance.currentUser;
-      if (user == null) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text('User is not logged in!'),
-          ),
-        );
-        return;
-      }
+  @override
+  void dispose() {
+    titleController.dispose();
+    descriptionController.dispose();
+    super.dispose();
+  }
 
-      final uid = user.uid;
-      final taskRef = FirebaseDatabase.instanceFor(
-      app: Firebase.app(),
-      databaseURL:
-      "https://project-akhir-pam-4f1a1-default-rtdb.asia-southeast1.firebasedatabase.app",)
-      .ref()
-      .child('tasks')
-      .child(uid);
-
-      final task = {
-        'title': titleController.text,
-        'notes': notesController.text,
-        'timestamp': DateTime.now().toIso8601String(),
-      };
-
-      await taskRef.push().set(task);
-
-      Navigator.pop(context);
-    } catch (e) {
+  void _saveTask(BuildContext context) {
+    if (titleController.text.isEmpty) {
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text('Failed to save task: $e'),
-        ),
+        const SnackBar(content: Text('Task title cannot be empty!')),
       );
+      return;
     }
+
+    final task = TaskModel(
+      id: DateTime.now().millisecondsSinceEpoch.toString(),
+      title: titleController.text,
+      description: descriptionController.text,
+      isCompleted: false,
+      dueDate: DateTime.now().add(const Duration(days: 1)),
+    );
+
+    context.read<TaskBloc>().add(AddTask(task));
+    Navigator.pop(context);
   }
 
   @override
@@ -56,9 +49,7 @@ class AddTaskPage extends StatelessWidget {
         elevation: 0,
         leading: IconButton(
           icon: const Icon(Icons.arrow_back, color: Colors.black),
-          onPressed: () {
-            Navigator.pop(context);
-          },
+          onPressed: () => Navigator.pop(context),
         ),
         title: const Text(
           'Add Task',
@@ -68,60 +59,33 @@ class AddTaskPage extends StatelessWidget {
         actions: [
           IconButton(
             icon: const Icon(Icons.check, color: Colors.blue),
-            onPressed: () {
-              if (titleController.text.isNotEmpty) {
-                _saveTaskToDatabase(context);
-              } else {
-                ScaffoldMessenger.of(context).showSnackBar(
-                  const SnackBar(
-                    content: Text('Task title cannot be empty!'),
-                  ),
-                );
-              }
-            },
+            onPressed: () => _saveTask(context),
           ),
         ],
       ),
       body: Padding(
         padding: const EdgeInsets.all(16.0),
         child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             TextField(
               controller: titleController,
               decoration: const InputDecoration(
-                labelText: 'Judul',
-                labelStyle: TextStyle(
-                  fontSize: 20,
-                  fontWeight: FontWeight.bold,
-                  color: Colors.grey,
-                ),
-                border: InputBorder.none,
+                labelText: 'Title',
+                border: OutlineInputBorder(),
               ),
-              style: const TextStyle(fontSize: 20),
             ),
-            const SizedBox(height: 8),
+            const SizedBox(height: 16),
             TextField(
-              controller: notesController,
+              controller: descriptionController,
               decoration: const InputDecoration(
-                labelText: 'Catatan',
-                labelStyle: TextStyle(
-                  fontSize: 16,
-                  color: Colors.grey,
-                ),
-                border: InputBorder.none,
+                labelText: 'Description',
+                border: OutlineInputBorder(),
               ),
-              maxLines: null, 
-              keyboardType: TextInputType.multiline,
+              maxLines: 3,
             ),
           ],
         ),
       ),
-      bottomNavigationBar: Container(
-        height: 8,
-        color: Colors.blueGrey[50], 
-      ),
-      backgroundColor: const Color(0xFFF7F8FC), 
     );
   }
 }

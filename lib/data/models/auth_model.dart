@@ -1,4 +1,3 @@
-import 'package:firebase_auth/firebase_auth.dart';
 import 'package:taskly/domain/entities/auth_entity.dart';
 
 class AuthModel extends AuthEntity {
@@ -10,10 +9,17 @@ class AuthModel extends AuthEntity {
           email: email,
         );
 
-  factory AuthModel.fromFirebaseUser(User user) {
+  Map<String, dynamic> toJson() {
+    return {
+      'uid': uid,
+      'email': email,
+    };
+  }
+
+  factory AuthModel.fromJson(Map<String, dynamic> json) {
     return AuthModel(
-      uid: user.uid,
-      email: user.email ?? '',
+      uid: json['uid'] as String,
+      email: json['email'] as String,
     );
   }
-} 
+}

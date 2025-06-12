@@ -6,25 +6,34 @@ import 'package:taskly/domain/repositories/auth_repository.dart';
 class AuthRepositoryImpl implements AuthRepository {
   final FirebaseAuth _auth;
 
-  AuthRepositoryImpl({FirebaseAuth? auth}) : _auth = auth ?? FirebaseAuth.instance;
+  AuthRepositoryImpl({FirebaseAuth? auth})
+      : _auth = auth ?? FirebaseAuth.instance;
+
+  AuthEntity _createAuthEntity(User user) {
+    return AuthModel(
+      uid: user.uid,
+      email: user.email ?? '',
+    );
+  }
 
   @override
   Future<Map<String, dynamic>> signUp(String email, String password) async {
     try {
       print('Starting registration process for email: $email');
-      
+
       final credential = await _auth.createUserWithEmailAndPassword(
         email: email,
         password: password,
       );
-      
+
       print('Firebase response received');
-      
+
       if (credential.user != null) {
         print('User created successfully: ${credential.user!.uid}');
+        final user = _createAuthEntity(credential.user!);
         return {
           'success': true,
-          'user': AuthModel.fromFirebaseUser(credential.user!),
+          'user': user,
           'message': 'Registration successful'
         };
       } else {
@@ -35,7 +44,8 @@ class AuthRepositoryImpl implements AuthRepository {
         };
       }
     } on FirebaseAuthException catch (e) {
-      print('FirebaseAuthException during registration: ${e.code} - ${e.message}');
+      print(
+          'FirebaseAuthException during registration: ${e.code} - ${e.message}');
       String message;
       switch (e.code) {
         case 'weak-password':
@@ -69,64 +79,113 @@ class AuthRepositoryImpl implements AuthRepository {
   @override
   Future<Map<String, dynamic>> signIn(String email, String password) async {
     try {
+      print('Starting login process for email: $email');
+
+      // Pastikan tidak ada session yang tersisa
+      if (_auth.currentUser != null) {
+        print('Signing out existing user: ${_auth.currentUser?.uid}');
+        await _auth.signOut();
+        await Future.delayed(const Duration(milliseconds: 500));
+      }
+
+      print('Attempting to sign in with email and password');
       final credential = await _auth.signInWithEmailAndPassword(
-        email: email,
-        password: password,
+        email: email.trim(),
+        password: password.trim(),
       );
-      
+
+      print('Firebase login response received');
+      print('Credential type: ${credential.runtimeType}');
+      print('User type: ${credential.user?.runtimeType}');
+
       if (credential.user != null) {
-        return {
-          'success': true,
-          'user': AuthModel.fromFirebaseUser(credential.user!),
-          'message': 'Login successful'
-        };
+        print('User logged in successfully: ${credential.user!.uid}');
+        print('User email: ${credential.user!.email}');
+
+        // Tunggu sedikit untuk memastikan data user sudah lengkap
+        await Future.delayed(const Duration(milliseconds: 500));
+
+        // Refresh user untuk mendapatkan data terbaru
+        await credential.user?.reload();
+        final currentUser = _auth.currentUser;
+
+        if (currentUser != null) {
+          print('Creating auth entity for user: ${currentUser.uid}');
+          final user = _createAuthEntity(currentUser);
+          print('Auth entity created: ${user.runtimeType}');
+          print('Auth entity data: ${user.toJson()}');
+          return {'success': true, 'user': user, 'message': 'Login successful'};
+        } else {
+          print('Login failed: currentUser is null after reload');
+          return {'success': false, 'message': 'Login failed - no user data'};
+        }
       } else {
-        return {
-          'success': false,
-          'message': 'Login failed'
-        };
+        print('Login failed: credential.user is null');
+        return {'success': false, 'message': 'Login failed - no user data'};
       }
     } on FirebaseAuthException catch (e) {
+      print('FirebaseAuthException during login: ${e.code} - ${e.message}');
       String message;
       switch (e.code) {
         case 'user-not-found':
-          message = 'No user found for that email';
+          message = 'Email tidak terdaftar';
           break;
         case 'wrong-password':
-          message = 'Wrong password provided';
+          message = 'Password salah';
           break;
         case 'user-disabled':
-          message = 'This account has been disabled';
+          message = 'Akun ini telah dinonaktifkan';
           break;
         case 'invalid-email':
-          message = 'The email address is not valid';
+          message = 'Format email tidak valid';
+          break;
+        case 'invalid-credential':
+          message = 'Email atau password salah';
+          break;
+        case 'too-many-requests':
+          message = 'Terlalu banyak percobaan login. Silakan coba lagi nanti';
           break;
         default:
-          message = 'An error occurred during login';
+          message = 'Terjadi kesalahan saat login: ${e.message}';
       }
       return {
         'success': false,
         'message': message,
       };
-    } catch (e) {
+    } catch (e, stackTrace) {
+      print('Unexpected error during login: $e');
+      print('Stack trace: $stackTrace');
       return {
         'success': false,
-        'message': 'An unexpected error occurred',
+        'message': 'Terjadi kesalahan tidak terduga: $e',
       };
     }
   }
 
   @override
   Future<void> signOut() async {
-    await _auth.signOut();
+    try {
+      await _auth.signOut();
+      print('User signed out successfully');
+    } catch (e) {
+      print('Error signing out: $e');
+      throw Exception('Failed to sign out: $e');
+    }
   }
 
   @override
   AuthEntity? getCurrentUser() {
-    final user = _auth.currentUser;
-    if (user != null) {
-      return AuthModel.fromFirebaseUser(user);
+    try {
+      final user = _auth.currentUser;
+      if (user != null) {
+        print('Getting current user: ${user.uid}');
+        return _createAuthEntity(user);
+      }
+      print('No current user found');
+      return null;
+    } catch (e) {
+      print('Error getting current user: $e');
+      return null;
     }
-    return null;
   }
-} 
+}
